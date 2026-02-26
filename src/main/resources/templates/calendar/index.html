@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/calendar.css}">
+    <script th:src="@{/js/htmx.min.js}"></script>
+</head>
+<body>
+<div class="calendar-page">
+    <header class="app-bar">
+        <div class="brand-block">
+            <span class="brand-mark">AH</span>
+            <div>
+                <p class="brand-eyebrow">Base Healthcare</p>
+                <h1>Calendar Lab</h1>
+            </div>
+        </div>
+        <div class="app-bar-actions">
+            <a class="ghost-button" th:href="@{/calendar(date=${vm.todayIso})}">Today</a>
+            <a class="ghost-button" th:href="@{/api/v1/appointments/}" target="_blank" rel="noreferrer">Appointments API</a>
+        </div>
+    </header>
+
+    <div id="calendar-shell" th:fragment="calendarShell">
+        <div class="calendar-shell">
+            <section class="calendar-toolbar">
+                <div class="nav-group">
+                    <a class="icon-button"
+                       aria-label="Previous week"
+                       th:href="@{/calendar(date=${vm.previousWeekIso})}"
+                       th:attr="hx-get=@{/calendar/week(date=${vm.previousWeekIso})}"
+                       hx-target="#calendar-shell"
+                       hx-swap="outerHTML">‹</a>
+                    <a class="icon-button"
+                       aria-label="Next week"
+                       th:href="@{/calendar(date=${vm.nextWeekIso})}"
+                       th:attr="hx-get=@{/calendar/week(date=${vm.nextWeekIso})}"
+                       hx-target="#calendar-shell"
+                       hx-swap="outerHTML">›</a>
+                    <div class="range-label">
+                        <p class="range-title" th:text="${vm.rangeLabel}">March 3 - 9, 2026</p>
+                        <p class="range-subtitle">Week view prototype with HTMX partial refresh</p>
+                    </div>
+                </div>
+                <div class="view-pill">Week</div>
+            </section>
+
+            <div class="layout-grid">
+                <aside class="sidebar">
+                    <section class="panel mini-calendar-panel">
+                        <div class="panel-header">
+                            <h2 th:text="${vm.monthLabel}">March 2026</h2>
+                        </div>
+                        <div class="mini-calendar">
+                            <div class="mini-weekdays">
+                                <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                            </div>
+                            <div class="mini-weeks">
+                                <div class="mini-week" th:each="week : ${vm.miniWeeks}">
+                                    <a class="mini-day"
+                                       th:each="day : ${week.days}"
+                                       th:text="${day.dayOfMonthLabel}"
+                                       th:href="@{/calendar(date=${day.isoDate})}"
+                                       th:attr="hx-get=@{/calendar/week(date=${day.isoDate})}"
+                                       hx-target="#calendar-shell"
+                                       hx-swap="outerHTML"
+                                       th:classappend="${(day.currentMonth ? '' : ' is-muted')
+                                          + (day.today ? ' is-today' : '')
+                                          + (day.inVisibleWeek ? ' is-in-week' : '')
+                                          + (day.selected ? ' is-selected' : '')}">1</a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="panel booking-panel">
+                        <div class="panel-header">
+                            <h2>Create booking</h2>
+                            <p>Pure Spring Boot + Thymeleaf + HTMX</p>
+                        </div>
+
+                        <div class="notice success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                        <div class="notice error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                        <form class="booking-form"
+                              th:action="@{/calendar/bookings}"
+                              method="post"
+                              th:object="${bookingForm}"
+                              hx-post="/calendar/bookings"
+                              hx-target="#calendar-shell"
+                              hx-swap="outerHTML">
+                            <input type="hidden" th:field="*{anchorDate}">
+
+                            <label>
+                                <span>Title</span>
+                                <input type="text" th:field="*{title}" placeholder="Patient consult">
+                            </label>
+
+                            <div class="split-fields">
+                                <label>
+                                    <span>Start</span>
+                                    <input type="datetime-local" th:field="*{startAt}">
+                                </label>
+                                <label>
+                                    <span>End</span>
+                                    <input type="datetime-local" th:field="*{endAt}">
+                                </label>
+                            </div>
+
+                            <label>
+                                <span>Color</span>
+                                <select th:field="*{colorToken}">
+                                    <option value="blue">Blue</option>
+                                    <option value="green">Green</option>
+                                    <option value="purple">Purple</option>
+                                    <option value="amber">Amber</option>
+                                    <option value="rose">Rose</option>
+                                </select>
+                            </label>
+
+                            <button class="primary-button" type="submit">Add booking</button>
+                        </form>
+                    </section>
+                </aside>
+
+                <main class="panel calendar-panel">
+                    <div class="calendar-grid-wrap">
+                        <div class="time-axis">
+                            <div class="axis-header"></div>
+                            <div class="axis-hours">
+                                <div class="axis-hour" th:each="hour : ${vm.hours}" th:text="${hour.label}">1 AM</div>
+                            </div>
+                        </div>
+
+                        <div class="week-grid">
+                            <div class="day-headers">
+                                <a class="day-header"
+                                   th:each="day : ${vm.days}"
+                                   th:href="@{/calendar(date=${day.isoDate})}"
+                                   th:attr="hx-get=@{/calendar/week(date=${day.isoDate})}"
+                                   hx-target="#calendar-shell"
+                                   hx-swap="outerHTML"
+                                   th:classappend="${day.today} ? ' is-today' : ''">
+                                    <span class="day-header-label" th:text="${day.weekdayLabel}">MON</span>
+                                    <span class="day-header-number"
+                                          th:text="${day.dayOfMonthLabel}"
+                                          th:classappend="${day.selected} ? ' is-selected' : ''">3</span>
+                                </a>
+                            </div>
+
+                            <div class="day-columns">
+                                <div class="day-column"
+                                     th:each="day : ${vm.days}"
+                                     th:classappend="${day.today} ? ' is-today' : ''">
+                                    <div class="hour-lines">
+                                        <div class="hour-line" th:each="hour : ${vm.hours}"></div>
+                                    </div>
+
+                                    <div class="events-layer">
+                                        <div class="event-card"
+                                             th:each="event : ${day.events}"
+                                             th:style="${event.style}"
+                                             th:classappend="' color-' + ${event.colorToken}">
+                                            <p class="event-title" th:text="${event.title}">Patient consult</p>
+                                            <p class="event-time" th:text="${event.timeLabel}">10:00 AM - 11:00 AM</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
