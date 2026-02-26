@@ -4,10 +4,14 @@ public class CalendarBookingForm {
 
     private String bookingId;
     private String anchorDate;
-    private String title;
     private String startAt;
     private String endAt;
-    private String colorToken;
+
+    private String locationType;
+    private String locationValue;
+
+    private String clinicianParticipantId;
+    private String patientParticipantId;
 
     public String getBookingId() {
         return bookingId;
@@ -23,14 +27,6 @@ public class CalendarBookingForm {
 
     public void setAnchorDate(String anchorDate) {
         this.anchorDate = anchorDate;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
     }
 
     public String getStartAt() {
@@ -49,11 +45,35 @@ public class CalendarBookingForm {
         this.endAt = endAt;
     }
 
-    public String getColorToken() {
-        return colorToken;
+    public String getLocationType() {
+        return locationType;
     }
 
-    public void setColorToken(String colorToken) {
-        this.colorToken = colorToken;
+    public void setLocationType(String locationType) {
+        this.locationType = locationType;
+    }
+
+    public String getLocationValue() {
+        return locationValue;
+    }
+
+    public void setLocationValue(String locationValue) {
+        this.locationValue = locationValue;
+    }
+
+    public String getClinicianParticipantId() {
+        return clinicianParticipantId;
+    }
+
+    public void setClinicianParticipantId(String clinicianParticipantId) {
+        this.clinicianParticipantId = clinicianParticipantId;
+    }
+
+    public String getPatientParticipantId() {
+        return patientParticipantId;
+    }
+
+    public void setPatientParticipantId(String patientParticipantId) {
+        this.patientParticipantId = patientParticipantId;
     }
 }

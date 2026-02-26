@@ -64,6 +64,38 @@
                 openModalForEvent(shell, eventCard);
             });
         });
+
+        wireModalFieldListeners(shell);
+    }
+
+    function wireModalFieldListeners(shell) {
+        var startInput = shell.querySelector("[data-drag-start-input]");
+        var endInput = shell.querySelector("[data-drag-end-input]");
+        var locationTypeInput = shell.querySelector("[data-drag-location-type]");
+
+        if (startInput) {
+            startInput.addEventListener("change", function () {
+                refreshSummary(shell);
+            });
+            startInput.addEventListener("input", function () {
+                refreshSummary(shell);
+            });
+        }
+
+        if (endInput) {
+            endInput.addEventListener("change", function () {
+                refreshSummary(shell);
+            });
+            endInput.addEventListener("input", function () {
+                refreshSummary(shell);
+            });
+        }
+
+        if (locationTypeInput) {
+            locationTypeInput.addEventListener("change", function () {
+                applyLocationFieldPresentation(shell, locationTypeInput.value);
+            });
+        }
     }
 
     function bindGlobalListeners() {
@@ -133,11 +165,11 @@
             try {
                 column.setPointerCapture(event.pointerId);
             } catch (ignore) {
-                // Pointer capture may fail if browser/platform does not support it here.
+                // Some browsers/platforms may reject pointer capture here.
             }
         }
 
-        renderPreview(state.activeSelection, false);
+        renderPreview(state.activeSelection);
     }
 
     function handlePointerMove(event) {
@@ -147,7 +179,7 @@
         }
 
         active.currentRawMinute = positionToMinutes(active.column, event.clientY);
-        renderPreview(active, false);
+        renderPreview(active);
     }
 
     function handlePointerUp(event) {
@@ -166,8 +198,8 @@
         }
     }
 
-    function renderPreview(active, applyMinimumDuration) {
-        var selection = buildSelection(active.startRawMinute, active.currentRawMinute, applyMinimumDuration);
+    function renderPreview(active) {
+        var selection = buildSelection(active.startRawMinute, active.currentRawMinute, false);
         var overlay = active.overlay;
         var topPct = (selection.startMinute / MINUTES_IN_DAY) * 100;
         var heightPct = ((selection.endMinute - selection.startMinute) / MINUTES_IN_DAY) * 100;
@@ -185,20 +217,12 @@
         var startMinute = clamp(snapDown(minRaw), 0, MINUTES_IN_DAY - 1);
         var endMinute = clamp(snapUp(maxRaw), 1, MINUTES_IN_DAY);
 
-        if (!hasDragged) {
-            endMinute = Math.min(MINUTES_IN_DAY, startMinute + MIN_DURATION_MINUTES);
-        }
-
-        if (finalizeSelection && (endMinute - startMinute) < MIN_DURATION_MINUTES) {
+        if (!hasDragged || (finalizeSelection && (endMinute - startMinute) < MIN_DURATION_MINUTES)) {
             endMinute = Math.min(MINUTES_IN_DAY, startMinute + MIN_DURATION_MINUTES);
         }
 
         if (endMinute <= startMinute) {
             endMinute = Math.min(MINUTES_IN_DAY, startMinute + SNAP_MINUTES);
-        }
-
-        if (endMinute <= startMinute) {
-            startMinute = Math.max(0, endMinute - SNAP_MINUTES);
         }
 
         return {
@@ -208,44 +232,73 @@
     }
 
     function openModalForSelection(shell, isoDate, selection) {
+        var sidebarDefaults = readSidebarCreateDefaults(shell);
         var startMinute = selection.startMinute;
-        var finalEndMinute = Math.min(MINUTES_IN_DAY - 1, selection.endMinute);
-        if (finalEndMinute <= startMinute) {
-            finalEndMinute = Math.min(MINUTES_IN_DAY - 1, startMinute + SNAP_MINUTES);
-        }
+        var endMinute = Math.min(MINUTES_IN_DAY - 1, Math.max(selection.endMinute, startMinute + SNAP_MINUTES));
 
         openModalWithValues(shell, {
             mode: "create",
             bookingId: "",
             anchorDate: isoDate,
-            title: "Follow-up visit",
             startAt: toDateTimeLocalValue(isoDate, startMinute),
-            endAt: toDateTimeLocalValue(isoDate, finalEndMinute),
-            colorToken: "blue"
+            endAt: toDateTimeLocalValue(isoDate, endMinute),
+            locationType: sidebarDefaults.locationType || "digital",
+            locationValue: sidebarDefaults.locationValue || "",
+            clinicianParticipantId: sidebarDefaults.clinicianParticipantId || "",
+            patientParticipantId: sidebarDefaults.patientParticipantId || ""
         });
     }
 
     function openModalForEvent(shell, eventCard) {
         var bookingId = eventCard.dataset.bookingId || "";
-        var title = eventCard.dataset.bookingTitle || "Follow-up visit";
         var startAt = eventCard.dataset.bookingStart || "";
         var endAt = eventCard.dataset.bookingEnd || "";
-        var colorToken = eventCard.dataset.bookingColor || "blue";
-        var anchorDate = startAt.slice(0, 10);
 
-        if (!startAt || !endAt || !anchorDate) {
+        if (!bookingId || !startAt || !endAt) {
             return;
         }
 
         openModalWithValues(shell, {
             mode: "edit",
             bookingId: bookingId,
-            anchorDate: anchorDate,
-            title: title,
+            anchorDate: startAt.slice(0, 10),
             startAt: startAt,
             endAt: endAt,
-            colorToken: colorToken
+            locationType: "digital",
+            locationValue: "",
+            clinicianParticipantId: "",
+            patientParticipantId: ""
         });
+    }
+
+    function readSidebarCreateDefaults(shell) {
+        var root = shell || document;
+        var values = {
+            locationType: "digital",
+            locationValue: "",
+            clinicianParticipantId: "",
+            patientParticipantId: ""
+        };
+
+        var locationTypeField = root.querySelector(".booking-form [name='locationType']");
+        var locationValueField = root.querySelector(".booking-form [name='locationValue']");
+        var clinicianField = root.querySelector(".booking-form [name='clinicianParticipantId']");
+        var patientField = root.querySelector(".booking-form [name='patientParticipantId']");
+
+        if (locationTypeField) {
+            values.locationType = locationTypeField.value || values.locationType;
+        }
+        if (locationValueField) {
+            values.locationValue = locationValueField.value || values.locationValue;
+        }
+        if (clinicianField) {
+            values.clinicianParticipantId = clinicianField.value || values.clinicianParticipantId;
+        }
+        if (patientField) {
+            values.patientParticipantId = patientField.value || values.patientParticipantId;
+        }
+
+        return values;
     }
 
     function openModalWithValues(shell, payload) {
@@ -257,51 +310,107 @@
 
         var bookingIdInput = form.querySelector("[data-drag-booking-id]");
         var anchorInput = form.querySelector("[data-drag-anchor-date]");
-        var titleInput = form.querySelector("[data-drag-title-input]");
         var startInput = form.querySelector("[data-drag-start-input]");
         var endInput = form.querySelector("[data-drag-end-input]");
-        var colorInput = form.querySelector("[data-drag-color-input]");
-        var summaryEl = shell.querySelector("[data-drag-summary]");
+        var locationTypeInput = form.querySelector("[data-drag-location-type]");
+        var locationValueInput = form.querySelector("[data-drag-location-value]");
+        var clinicianInput = form.querySelector("[data-drag-clinician-id]");
+        var patientInput = form.querySelector("[data-drag-patient-id]");
         var modeEyebrow = shell.querySelector("[data-drag-mode-eyebrow]");
         var modeTitle = shell.querySelector("[data-drag-mode-title]");
         var submitLabel = shell.querySelector("[data-drag-submit-label]");
+        var createOnlyBlocks = shell.querySelectorAll("[data-drag-create-only]");
+        var editNote = shell.querySelector("[data-drag-edit-note]");
 
-        if (!bookingIdInput || !anchorInput || !titleInput || !startInput || !endInput || !summaryEl) {
+        if (!bookingIdInput || !anchorInput || !startInput || !endInput) {
             return;
         }
 
+        var isEdit = payload.mode === "edit";
+
         bookingIdInput.value = payload.bookingId || "";
         anchorInput.value = payload.anchorDate || "";
-        titleInput.value = payload.title || "Follow-up visit";
         startInput.value = payload.startAt || "";
         endInput.value = payload.endAt || "";
 
-        if (colorInput) {
-            colorInput.value = payload.colorToken || "blue";
+        if (locationTypeInput) {
+            locationTypeInput.value = payload.locationType || "digital";
+        }
+        if (locationValueInput) {
+            locationValueInput.value = payload.locationValue || "";
+        }
+        if (clinicianInput) {
+            clinicianInput.value = payload.clinicianParticipantId || "";
+        }
+        if (patientInput) {
+            patientInput.value = payload.patientParticipantId || "";
+        }
+
+        createOnlyBlocks.forEach(function (block) {
+            block.hidden = isEdit;
+            block.querySelectorAll("input, select, textarea").forEach(function (field) {
+                field.disabled = isEdit;
+            });
+        });
+
+        if (editNote) {
+            editNote.hidden = !isEdit;
         }
 
         if (modeEyebrow) {
-            modeEyebrow.textContent = payload.mode === "edit" ? "Edit booking" : "Quick booking";
+            modeEyebrow.textContent = isEdit ? "Edit booking" : "Quick booking";
         }
-
         if (modeTitle) {
-            modeTitle.textContent = payload.mode === "edit"
-                ? "Update booking details"
-                : "Create booking from selected slot";
+            modeTitle.textContent = isEdit ? "Reschedule appointment" : "Create appointment from selected slot";
+        }
+        if (submitLabel) {
+            submitLabel.textContent = isEdit ? "Reschedule" : "Create appointment";
         }
 
-        if (submitLabel) {
-            submitLabel.textContent = payload.mode === "edit" ? "Update booking" : "Save booking";
+        applyLocationFieldPresentation(shell, locationTypeInput ? locationTypeInput.value : "digital");
+        refreshSummary(shell);
+
+        modal.hidden = false;
+        requestAnimationFrame(function () {
+            if (isEdit) {
+                startInput.focus();
+            } else if (locationValueInput) {
+                locationValueInput.focus();
+                locationValueInput.select();
+            } else {
+                startInput.focus();
+            }
+        });
+    }
+
+    function applyLocationFieldPresentation(shell, locationType) {
+        var label = shell.querySelector("[data-drag-location-value-label]");
+        var input = shell.querySelector("[data-drag-location-value]");
+        var normalizedType = (locationType || "").toLowerCase();
+
+        if (!label || !input) {
+            return;
+        }
+
+        if (normalizedType === "physical") {
+            label.textContent = "Address";
+            input.placeholder = "123 Main St, Suite 200";
+        } else {
+            label.textContent = "Location URL";
+            input.placeholder = "http://localhost:8181/live-room/...";
+        }
+    }
+
+    function refreshSummary(shell) {
+        var startInput = shell.querySelector("[data-drag-start-input]");
+        var endInput = shell.querySelector("[data-drag-end-input]");
+        var summaryEl = shell.querySelector("[data-drag-summary]");
+
+        if (!startInput || !endInput || !summaryEl) {
+            return;
         }
 
         summaryEl.textContent = buildSummaryFromInputValues(startInput.value, endInput.value);
-
-        modal.hidden = false;
-
-        requestAnimationFrame(function () {
-            titleInput.focus();
-            titleInput.select();
-        });
     }
 
     function closeModal(shell) {
@@ -350,12 +459,6 @@
         ].join("");
     }
 
-    function buildSummary(isoDate, startMinute, endMinute) {
-        var startDate = toDate(isoDate, startMinute);
-        var endDate = toDate(isoDate, endMinute);
-        return dateFormatter.format(startDate) + " • " + timeFormatter.format(startDate) + " - " + timeFormatter.format(endDate);
-    }
-
     function buildSummaryFromInputValues(startValue, endValue) {
         var startDate = fromDateTimeLocalValue(startValue);
         var endDate = fromDateTimeLocalValue(endValue);
@@ -365,13 +468,6 @@
         }
 
         return dateFormatter.format(startDate) + " • " + timeFormatter.format(startDate) + " - " + timeFormatter.format(endDate);
-    }
-
-    function toDate(isoDate, minuteOfDay) {
-        var parts = isoDate.split("-").map(Number);
-        var date = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
-        date.setMinutes(clamp(Math.round(minuteOfDay), 0, MINUTES_IN_DAY - 1));
-        return date;
     }
 
     function fromDateTimeLocalValue(value) {

@@ -81,8 +81,8 @@
 
                     <section class="panel booking-panel">
                         <div class="panel-header">
-                            <h2>Create booking</h2>
-                            <p>Pure Spring Boot + Thymeleaf + HTMX</p>
+                            <h2>Create appointment</h2>
+                            <p>Uses Axon commands/events and the appointment query model</p>
                         </div>
 
                         <div class="notice success" th:if="${successMessage}" th:text="${successMessage}"></div>
@@ -98,11 +98,6 @@
                             <input type="hidden" th:field="*{bookingId}">
                             <input type="hidden" th:field="*{anchorDate}">
 
-                            <label>
-                                <span>Title</span>
-                                <input type="text" th:field="*{title}" placeholder="Patient consult">
-                            </label>
-
                             <div class="split-fields">
                                 <label>
                                     <span>Start</span>
@@ -114,19 +109,32 @@
                                 </label>
                             </div>
 
-                                <label>
-                                    <span>Color</span>
-                                    <select th:field="*{colorToken}">
-                                    <option value="blue">Blue</option>
-                                    <option value="green">Green</option>
-                                    <option value="purple">Purple</option>
-                                    <option value="amber">Amber</option>
-                                    <option value="rose">Rose</option>
+                            <label>
+                                <span>Location type</span>
+                                <select th:field="*{locationType}">
+                                    <option value="digital">Digital</option>
+                                    <option value="physical">Physical</option>
                                 </select>
-                                </label>
+                            </label>
 
-                            <p class="booking-form-tip">Tip: drag on the week grid to select a time range and open a quick booking modal.</p>
-                            <button class="primary-button" type="submit">Add booking</button>
+                            <label>
+                                <span>Location (URL or address)</span>
+                                <input type="text" th:field="*{locationValue}" placeholder="http://localhost:8181/live-room/...">
+                            </label>
+
+                            <div class="split-fields">
+                                <label>
+                                    <span>Clinician participant id</span>
+                                    <input type="text" th:field="*{clinicianParticipantId}" placeholder="clinician-123">
+                                </label>
+                                <label>
+                                    <span>Patient participant id</span>
+                                    <input type="text" th:field="*{patientParticipantId}" placeholder="patient-456">
+                                </label>
+                            </div>
+
+                            <p class="booking-form-tip">Tip: drag on the week grid to select a time range and open the modal. New appointments are created through your Axon command flow.</p>
+                            <button class="primary-button" type="submit">Create appointment</button>
                         </form>
                     </section>
                 </aside>
@@ -171,10 +179,8 @@
                                              th:each="event : ${day.events}"
                                              th:style="${event.style}"
                                              th:attr="data-booking-id=${event.id},
-                                                      data-booking-title=${event.title},
                                                       data-booking-start=${event.startAtInputValue},
-                                                      data-booking-end=${event.endAtInputValue},
-                                                      data-booking-color=${event.colorToken}"
+                                                      data-booking-end=${event.endAtInputValue}"
                                              th:classappend="' color-' + ${event.colorToken}">
                                             <p class="event-title" th:text="${event.title}">Patient consult</p>
                                             <p class="event-time" th:text="${event.timeLabel}">10:00 AM - 11:00 AM</p>
@@ -208,11 +214,6 @@
                         <input type="hidden" name="bookingId" data-drag-booking-id>
                         <input type="hidden" name="anchorDate" data-drag-anchor-date>
 
-                        <label>
-                            <span>Title</span>
-                            <input type="text" name="title" data-drag-title-input value="Follow-up visit" required>
-                        </label>
-
                         <div class="split-fields">
                             <label>
                                 <span>Start</span>
@@ -224,16 +225,35 @@
                             </label>
                         </div>
 
-                        <label>
-                            <span>Color</span>
-                            <select name="colorToken" data-drag-color-input>
-                                <option value="blue">Blue</option>
-                                <option value="green">Green</option>
-                                <option value="purple">Purple</option>
-                                <option value="amber">Amber</option>
-                                <option value="rose">Rose</option>
-                            </select>
-                        </label>
+                        <div data-drag-create-only>
+                            <label>
+                                <span>Location type</span>
+                                <select name="locationType" data-drag-location-type>
+                                    <option value="digital">Digital</option>
+                                    <option value="physical">Physical</option>
+                                </select>
+                            </label>
+
+                            <label>
+                                <span data-drag-location-value-label>Location URL</span>
+                                <input type="text" name="locationValue" data-drag-location-value placeholder="http://localhost:8181/live-room/...">
+                            </label>
+
+                            <div class="split-fields">
+                                <label>
+                                    <span>Clinician participant id</span>
+                                    <input type="text" name="clinicianParticipantId" data-drag-clinician-id placeholder="clinician-123">
+                                </label>
+                                <label>
+                                    <span>Patient participant id</span>
+                                    <input type="text" name="patientParticipantId" data-drag-patient-id placeholder="patient-456">
+                                </label>
+                            </div>
+                        </div>
+
+                        <p class="calendar-modal-note" hidden data-drag-edit-note>
+                            Editing an existing event reschedules the appointment time using the existing appointment id. Location and participants are kept unchanged.
+                        </p>
 
                         <div class="calendar-modal-actions">
                             <button type="button" class="ghost-button" data-drag-booking-close>Cancel</button>

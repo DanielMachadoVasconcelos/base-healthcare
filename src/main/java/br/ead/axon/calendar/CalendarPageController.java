@@ -16,25 +16,25 @@ import java.time.LocalDate;
 @RequestMapping("/calendar")
 public class CalendarPageController {
 
-    private final CalendarPlaygroundService calendarPlaygroundService;
+    private final CalendarAppointmentService calendarAppointmentService;
 
-    public CalendarPageController(CalendarPlaygroundService calendarPlaygroundService) {
-        this.calendarPlaygroundService = calendarPlaygroundService;
+    public CalendarPageController(CalendarAppointmentService calendarAppointmentService) {
+        this.calendarAppointmentService = calendarAppointmentService;
     }
 
     @GetMapping
     public String calendarPage(@RequestParam(value = "date", required = false) LocalDate date,
                                Model model) {
-        LocalDate anchor = date != null ? date : calendarPlaygroundService.today();
-        populatePageModel(model, anchor, calendarPlaygroundService.defaultForm(anchor), null, null);
+        LocalDate anchor = date != null ? date : calendarAppointmentService.today();
+        populatePageModel(model, anchor, calendarAppointmentService.defaultForm(anchor), null, null);
         return "calendar/index";
     }
 
     @GetMapping("/week")
     public String calendarWeekFragment(@RequestParam(value = "date", required = false) LocalDate date,
                                        Model model) {
-        LocalDate anchor = date != null ? date : calendarPlaygroundService.today();
-        populatePageModel(model, anchor, calendarPlaygroundService.defaultForm(anchor), null, null);
+        LocalDate anchor = date != null ? date : calendarAppointmentService.today();
+        populatePageModel(model, anchor, calendarAppointmentService.defaultForm(anchor), null, null);
         return "calendar/index :: calendarShell";
     }
 
@@ -43,17 +43,17 @@ public class CalendarPageController {
                                 @RequestHeader(value = "HX-Request", required = false) String hxRequest,
                                 HttpServletResponse response,
                                 Model model) {
-        LocalDate anchor = calendarPlaygroundService.resolveAnchorDate(bookingForm.getAnchorDate());
+        LocalDate anchor = calendarAppointmentService.resolveAnchorDate(bookingForm.getAnchorDate());
         String successMessage = null;
         String errorMessage = null;
 
         try {
-            var saveResult = calendarPlaygroundService.saveBooking(bookingForm);
+            var saveResult = calendarAppointmentService.saveBooking(bookingForm);
             anchor = saveResult.startAt().toLocalDate();
             successMessage = saveResult.updated()
-                    ? "Booking updated in the calendar playground."
-                    : "Booking added to the calendar playground.";
-            bookingForm = calendarPlaygroundService.defaultForm(anchor);
+                    ? "Appointment rescheduled."
+                    : "Appointment created.";
+            bookingForm = calendarAppointmentService.defaultForm(anchor);
         } catch (IllegalArgumentException ex) {
             response.setStatus(422);
             errorMessage = ex.getMessage();
@@ -68,7 +68,7 @@ public class CalendarPageController {
                                    CalendarBookingForm bookingForm,
                                    String successMessage,
                                    String errorMessage) {
-        model.addAttribute("vm", calendarPlaygroundService.buildWeek(anchorDate));
+        model.addAttribute("vm", calendarAppointmentService.buildWeek(anchorDate));
         model.addAttribute("bookingForm", bookingForm);
         model.addAttribute("successMessage", successMessage);
         model.addAttribute("errorMessage", errorMessage);
