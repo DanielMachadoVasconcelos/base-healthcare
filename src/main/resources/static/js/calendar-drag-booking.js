@@ -52,6 +52,18 @@
                 beginSelection(event, shell, column);
             });
         });
+
+        shell.querySelectorAll(".event-card[data-booking-id]").forEach(function (eventCard) {
+            eventCard.addEventListener("pointerdown", function (event) {
+                event.stopPropagation();
+            });
+
+            eventCard.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                openModalForEvent(shell, eventCard);
+            });
+        });
     }
 
     function bindGlobalListeners() {
@@ -84,6 +96,10 @@
 
     function beginSelection(event, shell, column) {
         if (event.button !== 0 || !event.isPrimary) {
+            return;
+        }
+
+        if (event.target && typeof event.target.closest === "function" && event.target.closest(".event-card")) {
             return;
         }
 
@@ -146,7 +162,7 @@
 
         clearActiveSelection();
         if (isoDate) {
-            openModal(shell, isoDate, selection);
+            openModalForSelection(shell, isoDate, selection);
         }
     }
 
@@ -191,51 +207,101 @@
         };
     }
 
-    function openModal(shell, isoDate, selection) {
+    function openModalForSelection(shell, isoDate, selection) {
+        var startMinute = selection.startMinute;
+        var finalEndMinute = Math.min(MINUTES_IN_DAY - 1, selection.endMinute);
+        if (finalEndMinute <= startMinute) {
+            finalEndMinute = Math.min(MINUTES_IN_DAY - 1, startMinute + SNAP_MINUTES);
+        }
+
+        openModalWithValues(shell, {
+            mode: "create",
+            bookingId: "",
+            anchorDate: isoDate,
+            title: "Follow-up visit",
+            startAt: toDateTimeLocalValue(isoDate, startMinute),
+            endAt: toDateTimeLocalValue(isoDate, finalEndMinute),
+            colorToken: "blue"
+        });
+    }
+
+    function openModalForEvent(shell, eventCard) {
+        var bookingId = eventCard.dataset.bookingId || "";
+        var title = eventCard.dataset.bookingTitle || "Follow-up visit";
+        var startAt = eventCard.dataset.bookingStart || "";
+        var endAt = eventCard.dataset.bookingEnd || "";
+        var colorToken = eventCard.dataset.bookingColor || "blue";
+        var anchorDate = startAt.slice(0, 10);
+
+        if (!startAt || !endAt || !anchorDate) {
+            return;
+        }
+
+        openModalWithValues(shell, {
+            mode: "edit",
+            bookingId: bookingId,
+            anchorDate: anchorDate,
+            title: title,
+            startAt: startAt,
+            endAt: endAt,
+            colorToken: colorToken
+        });
+    }
+
+    function openModalWithValues(shell, payload) {
         var modal = shell.querySelector("[data-drag-booking-modal]");
         var form = shell.querySelector("[data-drag-booking-form]");
         if (!modal || !form) {
             return;
         }
 
+        var bookingIdInput = form.querySelector("[data-drag-booking-id]");
         var anchorInput = form.querySelector("[data-drag-anchor-date]");
         var titleInput = form.querySelector("[data-drag-title-input]");
         var startInput = form.querySelector("[data-drag-start-input]");
         var endInput = form.querySelector("[data-drag-end-input]");
         var colorInput = form.querySelector("[data-drag-color-input]");
         var summaryEl = shell.querySelector("[data-drag-summary]");
+        var modeEyebrow = shell.querySelector("[data-drag-mode-eyebrow]");
+        var modeTitle = shell.querySelector("[data-drag-mode-title]");
+        var submitLabel = shell.querySelector("[data-drag-submit-label]");
 
-        if (!anchorInput || !startInput || !endInput || !summaryEl) {
+        if (!bookingIdInput || !anchorInput || !titleInput || !startInput || !endInput || !summaryEl) {
             return;
         }
 
-        anchorInput.value = isoDate;
-        startInput.value = toDateTimeLocalValue(isoDate, selection.startMinute);
+        bookingIdInput.value = payload.bookingId || "";
+        anchorInput.value = payload.anchorDate || "";
+        titleInput.value = payload.title || "Follow-up visit";
+        startInput.value = payload.startAt || "";
+        endInput.value = payload.endAt || "";
 
-        var finalEndMinute = Math.min(MINUTES_IN_DAY - 1, selection.endMinute);
-        if (finalEndMinute <= selection.startMinute) {
-            finalEndMinute = Math.min(MINUTES_IN_DAY - 1, selection.startMinute + SNAP_MINUTES);
-        }
-        endInput.value = toDateTimeLocalValue(isoDate, finalEndMinute);
-
-        if (titleInput && !titleInput.value.trim()) {
-            titleInput.value = "Follow-up visit";
+        if (colorInput) {
+            colorInput.value = payload.colorToken || "blue";
         }
 
-        if (colorInput && !colorInput.value) {
-            colorInput.value = "blue";
+        if (modeEyebrow) {
+            modeEyebrow.textContent = payload.mode === "edit" ? "Edit booking" : "Quick booking";
         }
 
-        summaryEl.textContent = buildSummary(isoDate, selection.startMinute, finalEndMinute);
+        if (modeTitle) {
+            modeTitle.textContent = payload.mode === "edit"
+                ? "Update booking details"
+                : "Create booking from selected slot";
+        }
+
+        if (submitLabel) {
+            submitLabel.textContent = payload.mode === "edit" ? "Update booking" : "Save booking";
+        }
+
+        summaryEl.textContent = buildSummaryFromInputValues(startInput.value, endInput.value);
 
         modal.hidden = false;
 
-        if (titleInput) {
-            requestAnimationFrame(function () {
-                titleInput.focus();
-                titleInput.select();
-            });
-        }
+        requestAnimationFrame(function () {
+            titleInput.focus();
+            titleInput.select();
+        });
     }
 
     function closeModal(shell) {
@@ -290,11 +356,43 @@
         return dateFormatter.format(startDate) + " • " + timeFormatter.format(startDate) + " - " + timeFormatter.format(endDate);
     }
 
+    function buildSummaryFromInputValues(startValue, endValue) {
+        var startDate = fromDateTimeLocalValue(startValue);
+        var endDate = fromDateTimeLocalValue(endValue);
+
+        if (!startDate || !endDate) {
+            return "Select a time range on the calendar to start.";
+        }
+
+        return dateFormatter.format(startDate) + " • " + timeFormatter.format(startDate) + " - " + timeFormatter.format(endDate);
+    }
+
     function toDate(isoDate, minuteOfDay) {
         var parts = isoDate.split("-").map(Number);
         var date = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
         date.setMinutes(clamp(Math.round(minuteOfDay), 0, MINUTES_IN_DAY - 1));
         return date;
+    }
+
+    function fromDateTimeLocalValue(value) {
+        if (!value || typeof value !== "string") {
+            return null;
+        }
+
+        var match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+        if (!match) {
+            return null;
+        }
+
+        return new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3]),
+            Number(match[4]),
+            Number(match[5]),
+            0,
+            0
+        );
     }
 
     function snapDown(value) {

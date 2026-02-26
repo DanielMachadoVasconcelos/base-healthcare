@@ -95,6 +95,7 @@
                               hx-post="/calendar/bookings"
                               hx-target="#calendar-shell"
                               hx-swap="outerHTML">
+                            <input type="hidden" th:field="*{bookingId}">
                             <input type="hidden" th:field="*{anchorDate}">
 
                             <label>
@@ -169,6 +170,11 @@
                                         <div class="event-card"
                                              th:each="event : ${day.events}"
                                              th:style="${event.style}"
+                                             th:attr="data-booking-id=${event.id},
+                                                      data-booking-title=${event.title},
+                                                      data-booking-start=${event.startAtInputValue},
+                                                      data-booking-end=${event.endAtInputValue},
+                                                      data-booking-color=${event.colorToken}"
                                              th:classappend="' color-' + ${event.colorToken}">
                                             <p class="event-title" th:text="${event.title}">Patient consult</p>
                                             <p class="event-time" th:text="${event.timeLabel}">10:00 AM - 11:00 AM</p>
@@ -185,8 +191,8 @@
                 <div class="calendar-modal" role="dialog" aria-modal="true" aria-labelledby="drag-booking-heading">
                     <div class="calendar-modal-header">
                         <div>
-                            <p class="calendar-modal-eyebrow">Quick booking</p>
-                            <h2 id="drag-booking-heading">Create booking from selected slot</h2>
+                            <p class="calendar-modal-eyebrow" data-drag-mode-eyebrow>Quick booking</p>
+                            <h2 id="drag-booking-heading" data-drag-mode-title>Create booking from selected slot</h2>
                             <p class="calendar-modal-summary" data-drag-summary>Select a time range on the calendar to start.</p>
                         </div>
                         <button type="button" class="modal-close-button" aria-label="Close modal" data-drag-booking-close>×</button>
@@ -199,6 +205,7 @@
                           hx-target="#calendar-shell"
                           hx-swap="outerHTML"
                           data-drag-booking-form>
+                        <input type="hidden" name="bookingId" data-drag-booking-id>
                         <input type="hidden" name="anchorDate" data-drag-anchor-date>
 
                         <label>
@@ -230,7 +237,7 @@
 
                         <div class="calendar-modal-actions">
                             <button type="button" class="ghost-button" data-drag-booking-close>Cancel</button>
-                            <button type="submit" class="primary-button">Save booking</button>
+                            <button type="submit" class="primary-button" data-drag-submit-label>Save booking</button>
                         </div>
                     </form>
                 </div>

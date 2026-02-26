@@ -2,11 +2,20 @@ package br.ead.axon.calendar;
 
 public class CalendarBookingForm {
 
+    private String bookingId;
     private String anchorDate;
     private String title;
     private String startAt;
     private String endAt;
     private String colorToken;
+
+    public String getBookingId() {
+        return bookingId;
+    }
+
+    public void setBookingId(String bookingId) {
+        this.bookingId = bookingId;
+    }
 
     public String getAnchorDate() {
         return anchorDate;

@@ -48,9 +48,11 @@ public class CalendarPageController {
         String errorMessage = null;
 
         try {
-            var createdStart = calendarPlaygroundService.createBooking(bookingForm);
-            anchor = createdStart.toLocalDate();
-            successMessage = "Booking added to the calendar playground.";
+            var saveResult = calendarPlaygroundService.saveBooking(bookingForm);
+            anchor = saveResult.startAt().toLocalDate();
+            successMessage = saveResult.updated()
+                    ? "Booking updated in the calendar playground."
+                    : "Booking added to the calendar playground.";
             bookingForm = calendarPlaygroundService.defaultForm(anchor);
         } catch (IllegalArgumentException ex) {
             response.setStatus(422);

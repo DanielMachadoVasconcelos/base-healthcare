@@ -43,6 +43,7 @@ public class CalendarPlaygroundService {
         var end = start.plusHours(1);
 
         CalendarBookingForm form = new CalendarBookingForm();
+        form.setBookingId("");
         form.setAnchorDate(selectedDate.toString());
         form.setTitle("Follow-up visit");
         form.setStartAt(start.format(INPUT_DATE_TIME));
@@ -63,7 +64,7 @@ public class CalendarPlaygroundService {
         }
     }
 
-    public LocalDateTime createBooking(CalendarBookingForm form) {
+    public BookingSaveResult saveBooking(CalendarBookingForm form) {
         var title = normalize(form.getTitle());
         if (title.isBlank()) {
             throw new IllegalArgumentException("A booking title is required.");
@@ -90,8 +91,17 @@ public class CalendarPlaygroundService {
             colorToken = "blue";
         }
 
-        bookings.add(new Booking(UUID.randomUUID(), title, startAt, endAt, colorToken));
-        return startAt;
+        UUID bookingId = parseBookingId(form.getBookingId());
+        boolean updated = bookingId != null;
+        if (updated) {
+            UUID existingBookingId = bookingId;
+            bookings.removeIf(existing -> existing.id().equals(existingBookingId));
+        } else {
+            bookingId = UUID.randomUUID();
+        }
+
+        bookings.add(new Booking(bookingId, title, startAt, endAt, colorToken));
+        return new BookingSaveResult(startAt, updated);
     }
 
     public CalendarWeekView buildWeek(LocalDate anchorDate) {
@@ -208,6 +218,8 @@ public class CalendarPlaygroundService {
                 booking.id().toString(),
                 booking.title(),
                 booking.startAt().format(EVENT_TIME_LABEL) + " - " + booking.endAt().format(EVENT_TIME_LABEL),
+                booking.startAt().format(INPUT_DATE_TIME),
+                booking.endAt().format(INPUT_DATE_TIME),
                 booking.colorToken(),
                 "top:" + formatPercent(topPercent)
                         + "%;height:" + formatPercent(heightPercent)
@@ -238,6 +250,19 @@ public class CalendarPlaygroundService {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private UUID parseBookingId(String rawBookingId) {
+        var normalized = normalize(rawBookingId);
+        if (normalized.isBlank()) {
+            return null;
+        }
+
+        try {
+            return UUID.fromString(normalized);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Booking id is invalid.");
+        }
     }
 
     private String formatPercent(double value) {
@@ -318,9 +343,14 @@ public class CalendarPlaygroundService {
             String id,
             String title,
             String timeLabel,
+            String startAtInputValue,
+            String endAtInputValue,
             String colorToken,
             String style
     ) {
+    }
+
+    public record BookingSaveResult(LocalDateTime startAt, boolean updated) {
     }
 
     public record MiniWeekRowView(List<MiniDayView> days) {
