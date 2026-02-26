@@ -7,8 +7,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -30,7 +28,6 @@ import java.util.Set;
 public final class Appointment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private String appointmentId;
 
     @Column(name = "start_at")

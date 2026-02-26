@@ -1,12 +1,17 @@
 plugins {
-    id 'org.springframework.boot' version '3.1.2'
-    id 'io.spring.dependency-management' version '1.1.2'
+    id 'org.springframework.boot' version '4.0.3'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'java'
 }
 
 group = 'br.ead.axon'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
 
 configurations {
     compileOnly {
@@ -19,16 +24,17 @@ repositories {
 }
 
 dependencies {
+    def axonVersion = '4.13.0'
+
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation ('org.axonframework:axon-spring-boot-starter:4.8.1') {
+    implementation ("org.axonframework:axon-spring-boot-starter:${axonVersion}") {
         exclude group: 'org.axonframework', module: 'axon-server-connector'
     }
 
-    implementation 'org.hibernate:hibernate-validator:7.0.1.Final'
-    implementation 'mysql:mysql-connector-java:8.0.26'
+    runtimeOnly 'org.postgresql:postgresql'
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
@@ -41,12 +47,12 @@ dependencies {
     implementation 'com.google.guava:guava:31.1-jre'
 
     compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 
-    testImplementation 'org.axonframework:axon-test:4.5.9'
+    testImplementation ("org.axonframework:axon-test:${axonVersion}")
 
 }
 

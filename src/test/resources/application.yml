@@ -1,14 +1,12 @@
 spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
-    serialization:
-      write-durations-as-timestamps: false
 
   jpa:
     show-sql: true
     hibernate:
       ddl-auto: update
-    database-platform: org.hibernate.dialect.MySQL8Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   docker:
     compose:

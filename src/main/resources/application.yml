@@ -1,13 +1,11 @@
 spring:
   jpa:
-    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   datasource:
-    url: jdbc:mysql://localhost:3306/appointment_data
+    url: jdbc:postgresql://localhost:5432/appointment_data
     username: appointment
     password: appointment
 
   jackson:
     property-naming-strategy: SNAKE_CASE
-    serialization:
-      write-durations-as-timestamps: false

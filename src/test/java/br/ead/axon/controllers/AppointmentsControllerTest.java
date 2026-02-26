@@ -17,7 +17,6 @@ import br.ead.axon.model.api.ClinicianParticipant;
 import br.ead.axon.model.api.DigitalLocation;
 import br.ead.axon.model.api.PatientParticipant;
 import br.ead.axon.model.requests.BookAppointmentRequest;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.Set;
@@ -27,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 class AppointmentsControllerTest extends SpringBootIntegrationTest {
 
