@@ -25,6 +25,11 @@ body {
             linear-gradient(180deg, #eef4ff 0%, #f8fbff 100%);
 }
 
+body.is-dragging-selection {
+    cursor: crosshair;
+    user-select: none;
+}
+
 a {
     color: inherit;
     text-decoration: none;
@@ -272,6 +277,13 @@ a {
     font-weight: 600;
 }
 
+.booking-form-tip {
+    margin: -2px 0 0;
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--muted);
+}
+
 .booking-form input,
 .booking-form select {
     width: 100%;
@@ -395,6 +407,7 @@ a {
 .day-column {
     position: relative;
     border-right: 1px solid rgba(148, 163, 184, 0.10);
+    cursor: crosshair;
 }
 
 .day-column:last-child {
@@ -403,6 +416,12 @@ a {
 
 .day-column.is-today {
     background: linear-gradient(180deg, rgba(59, 130, 246, 0.04), transparent 24%);
+}
+
+.day-column.is-selecting {
+    background:
+            linear-gradient(180deg, rgba(59, 130, 246, 0.06), rgba(59, 130, 246, 0.02)),
+            linear-gradient(180deg, rgba(59, 130, 246, 0.04), transparent 24%);
 }
 
 .hour-lines {
@@ -420,6 +439,19 @@ a {
 .events-layer {
     position: absolute;
     inset: 0;
+    pointer-events: none;
+}
+
+.selection-preview {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.18), rgba(37, 99, 235, 0.10));
+    border: 1px dashed rgba(37, 99, 235, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+    min-height: 12px;
+    z-index: 2;
 }
 
 .event-card {
@@ -430,6 +462,115 @@ a {
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
     overflow: hidden;
     min-height: 36px;
+}
+
+.calendar-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(15, 23, 42, 0.36);
+    backdrop-filter: blur(6px);
+}
+
+.calendar-modal {
+    width: min(540px, 100%);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 30px 65px rgba(15, 23, 42, 0.22);
+    overflow: hidden;
+}
+
+.calendar-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 18px 10px;
+}
+
+.calendar-modal-eyebrow {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.calendar-modal-header h2 {
+    margin: 6px 0 0;
+    font-size: 18px;
+    line-height: 1.2;
+}
+
+.calendar-modal-summary {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.modal-close-button {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(255, 255, 255, 0.9);
+    font: inherit;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.calendar-modal-form {
+    display: grid;
+    gap: 12px;
+    padding: 6px 18px 18px;
+}
+
+.calendar-modal-form label {
+    display: grid;
+    gap: 6px;
+}
+
+.calendar-modal-form label > span {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.calendar-modal-form input,
+.calendar-modal-form select {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 11px 12px;
+    font: inherit;
+    color: inherit;
+    outline: none;
+}
+
+.calendar-modal-form input:focus,
+.calendar-modal-form select:focus {
+    border-color: rgba(59, 130, 246, 0.45);
+    box-shadow: 0 0 0 4px var(--ring);
+}
+
+.calendar-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.calendar-modal-actions .ghost-button,
+.calendar-modal-actions .primary-button {
+    min-width: 110px;
 }
 
 .event-title {
@@ -573,5 +714,30 @@ a {
 
     .week-grid {
         min-width: 680px;
+    }
+
+    .calendar-modal-backdrop {
+        padding: 10px;
+    }
+
+    .calendar-modal {
+        border-radius: 16px;
+    }
+
+    .calendar-modal-header {
+        padding: 14px 14px 8px;
+    }
+
+    .calendar-modal-form {
+        padding: 6px 14px 14px;
+    }
+
+    .calendar-modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .calendar-modal-actions .ghost-button,
+    .calendar-modal-actions .primary-button {
+        width: 100%;
     }
 }

@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/calendar.css}">
     <script th:src="@{/js/htmx.min.js}"></script>
+    <script defer th:src="@{/js/calendar-drag-booking.js}"></script>
 </head>
 <body>
 <div class="calendar-page">
@@ -112,17 +113,18 @@
                                 </label>
                             </div>
 
-                            <label>
-                                <span>Color</span>
-                                <select th:field="*{colorToken}">
+                                <label>
+                                    <span>Color</span>
+                                    <select th:field="*{colorToken}">
                                     <option value="blue">Blue</option>
                                     <option value="green">Green</option>
                                     <option value="purple">Purple</option>
                                     <option value="amber">Amber</option>
                                     <option value="rose">Rose</option>
                                 </select>
-                            </label>
+                                </label>
 
+                            <p class="booking-form-tip">Tip: drag on the week grid to select a time range and open a quick booking modal.</p>
                             <button class="primary-button" type="submit">Add booking</button>
                         </form>
                     </section>
@@ -156,12 +158,14 @@
                             <div class="day-columns">
                                 <div class="day-column"
                                      th:each="day : ${vm.days}"
+                                     th:attr="data-iso-date=${day.isoDate}"
                                      th:classappend="${day.today} ? ' is-today' : ''">
                                     <div class="hour-lines">
                                         <div class="hour-line" th:each="hour : ${vm.hours}"></div>
                                     </div>
 
                                     <div class="events-layer">
+                                        <div class="selection-preview" hidden></div>
                                         <div class="event-card"
                                              th:each="event : ${day.events}"
                                              th:style="${event.style}"
@@ -175,6 +179,61 @@
                         </div>
                     </div>
                 </main>
+            </div>
+
+            <div class="calendar-modal-backdrop" hidden data-drag-booking-modal>
+                <div class="calendar-modal" role="dialog" aria-modal="true" aria-labelledby="drag-booking-heading">
+                    <div class="calendar-modal-header">
+                        <div>
+                            <p class="calendar-modal-eyebrow">Quick booking</p>
+                            <h2 id="drag-booking-heading">Create booking from selected slot</h2>
+                            <p class="calendar-modal-summary" data-drag-summary>Select a time range on the calendar to start.</p>
+                        </div>
+                        <button type="button" class="modal-close-button" aria-label="Close modal" data-drag-booking-close>×</button>
+                    </div>
+
+                    <form class="calendar-modal-form"
+                          th:action="@{/calendar/bookings}"
+                          method="post"
+                          hx-post="/calendar/bookings"
+                          hx-target="#calendar-shell"
+                          hx-swap="outerHTML"
+                          data-drag-booking-form>
+                        <input type="hidden" name="anchorDate" data-drag-anchor-date>
+
+                        <label>
+                            <span>Title</span>
+                            <input type="text" name="title" data-drag-title-input value="Follow-up visit" required>
+                        </label>
+
+                        <div class="split-fields">
+                            <label>
+                                <span>Start</span>
+                                <input type="datetime-local" name="startAt" data-drag-start-input step="900" required>
+                            </label>
+                            <label>
+                                <span>End</span>
+                                <input type="datetime-local" name="endAt" data-drag-end-input step="900" required>
+                            </label>
+                        </div>
+
+                        <label>
+                            <span>Color</span>
+                            <select name="colorToken" data-drag-color-input>
+                                <option value="blue">Blue</option>
+                                <option value="green">Green</option>
+                                <option value="purple">Purple</option>
+                                <option value="amber">Amber</option>
+                                <option value="rose">Rose</option>
+                            </select>
+                        </label>
+
+                        <div class="calendar-modal-actions">
+                            <button type="button" class="ghost-button" data-drag-booking-close>Cancel</button>
+                            <button type="submit" class="primary-button">Save booking</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
