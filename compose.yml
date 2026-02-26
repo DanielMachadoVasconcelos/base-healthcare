@@ -1,22 +1,17 @@
-version: '3.9'
 services:
 
   appointment-service-db:
-    image: mysql:8.0.23
-    platform: linux/amd64
+    image: postgres:18.2
     container_name: appointment-service-db
     volumes:
-      - appointment-service-db-data:/var/lib/mysql
+      - appointment-service-pg18-data:/var/lib/postgresql
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-      MYSQL_ROOT_PASSWORD: 'root'
-      MYSQL_USER: 'appointment'
-      MYSQL_PASSWORD: 'appointment'
-      MYSQL_DATABASE: 'appointment_data'
-    command: --character-set-server=utf8 --collation-server=utf8_unicode_ci --init-connect='SET collation_connection = utf8_unicode_ci;'
+      POSTGRES_USER: 'appointment'
+      POSTGRES_PASSWORD: 'appointment'
+      POSTGRES_DB: 'appointment_data'
     ports:
-      - "3306:3306"
+      - "5432:5432"
 
 volumes:
-  appointment-service-db-data:
+  appointment-service-pg18-data:
     driver: local

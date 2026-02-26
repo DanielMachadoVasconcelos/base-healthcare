@@ -8,6 +8,7 @@ import br.ead.axon.model.querry.FindAllAppointmentQuery;
 import br.ead.axon.model.entities.Appointment;
 import br.ead.axon.model.entities.AppointmentStatus;
 import br.ead.axon.repositories.AppointmentRepository;
+import jakarta.persistence.EntityManager;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.axonframework.eventhandling.EventHandler;
@@ -22,6 +23,7 @@ import java.util.List;
 public class AppointmentEventHandler {
 
     private final AppointmentRepository appointmentRepository;
+    private final EntityManager entityManager;
 
     @EventHandler
     public void on(AppointmentBookedEvent event) {
@@ -32,9 +34,9 @@ public class AppointmentEventHandler {
                 event.getLocation(),
                 event.getParticipants(),
                 AppointmentStatus.CREATED);
-        Appointment persisted = appointmentRepository.save(appointment);
+        entityManager.persist(appointment);
 
-        log.info("Persisted the Appointment [{}]", persisted);
+        log.info("Persisted the Appointment [{}]", appointment);
     }
 
     @EventHandler

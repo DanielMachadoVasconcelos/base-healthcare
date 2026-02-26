@@ -22,10 +22,10 @@ It is a healthcare service who coordinate booking appointments, enabling clients
 Prerequisites
 -------------
 
-* Java JDK 17
+* Java JDK 25
 * Gradle
 * Docker / Docker Compose
 
 #### Resources
 * Axon
-* Elasticsearch
+* PostgreSQL
