@@ -2,7 +2,6 @@ services:
 
   appointment-service-db:
     image: postgres:18.2
-    container_name: appointment-service-db
     volumes:
       - appointment-service-pg18-data:/var/lib/postgresql
     environment:

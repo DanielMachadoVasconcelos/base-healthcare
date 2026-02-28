@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/calendar.css}">
+    <script th:src="@{/js/htmx.min.js}"></script>
+    <script defer th:src="@{/js/calendar-drag-booking.js}"></script>
+</head>
+<body>
+<div class="calendar-page">
+    <header class="app-bar">
+        <div class="brand-block">
+            <span class="brand-mark">AH</span>
+            <div>
+                <p class="brand-eyebrow">Base Healthcare</p>
+                <h1>Calendar Lab</h1>
+            </div>
+        </div>
+        <div class="app-bar-actions">
+            <a class="ghost-button" th:href="@{/calendar(date=${vm.todayIso})}">Today</a>
+            <a class="ghost-button" th:href="@{/api/v1/appointments/}" target="_blank" rel="noreferrer">Appointments API</a>
+        </div>
+    </header>
+
+    <div id="calendar-shell" th:fragment="calendarShell">
+        <div class="calendar-shell">
+            <section class="calendar-toolbar">
+                <div class="nav-group">
+                    <a class="icon-button"
+                       aria-label="Previous week"
+                       th:href="@{/calendar(date=${vm.previousWeekIso})}"
+                       th:attr="hx-get=@{/calendar/week(date=${vm.previousWeekIso})}"
+                       hx-target="#calendar-shell"
+                       hx-swap="outerHTML">‹</a>
+                    <a class="icon-button"
+                       aria-label="Next week"
+                       th:href="@{/calendar(date=${vm.nextWeekIso})}"
+                       th:attr="hx-get=@{/calendar/week(date=${vm.nextWeekIso})}"
+                       hx-target="#calendar-shell"
+                       hx-swap="outerHTML">›</a>
+                    <div class="range-label">
+                        <p class="range-title" th:text="${vm.rangeLabel}">March 3 - 9, 2026</p>
+                        <p class="range-subtitle">Week view prototype with HTMX partial refresh</p>
+                    </div>
+                </div>
+                <div class="view-pill">Week</div>
+            </section>
+
+            <div class="layout-grid">
+                <aside class="sidebar">
+                    <section class="panel mini-calendar-panel">
+                        <div class="panel-header">
+                            <h2 th:text="${vm.monthLabel}">March 2026</h2>
+                        </div>
+                        <div class="mini-calendar">
+                            <div class="mini-weekdays">
+                                <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                            </div>
+                            <div class="mini-weeks">
+                                <div class="mini-week" th:each="week : ${vm.miniWeeks}">
+                                    <a class="mini-day"
+                                       th:each="day : ${week.days}"
+                                       th:text="${day.dayOfMonthLabel}"
+                                       th:href="@{/calendar(date=${day.isoDate})}"
+                                       th:attr="hx-get=@{/calendar/week(date=${day.isoDate})}"
+                                       hx-target="#calendar-shell"
+                                       hx-swap="outerHTML"
+                                       th:classappend="${(day.currentMonth ? '' : ' is-muted')
+                                          + (day.today ? ' is-today' : '')
+                                          + (day.inVisibleWeek ? ' is-in-week' : '')
+                                          + (day.selected ? ' is-selected' : '')}">1</a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="panel booking-panel">
+                        <div class="panel-header">
+                            <h2>Create appointment</h2>
+                            <p>Uses Axon commands/events and the appointment query model</p>
+                        </div>
+
+                        <div class="notice success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                        <div class="notice error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                        <form class="booking-form"
+                              th:action="@{/calendar/bookings}"
+                              method="post"
+                              th:object="${bookingForm}"
+                              hx-post="/calendar/bookings"
+                              hx-target="#calendar-shell"
+                              hx-swap="outerHTML">
+                            <input type="hidden" th:field="*{bookingId}">
+                            <input type="hidden" th:field="*{anchorDate}">
+
+                            <div class="split-fields">
+                                <label>
+                                    <span>Start</span>
+                                    <input type="datetime-local" th:field="*{startAt}">
+                                </label>
+                                <label>
+                                    <span>End</span>
+                                    <input type="datetime-local" th:field="*{endAt}">
+                                </label>
+                            </div>
+
+                            <label>
+                                <span>Location type</span>
+                                <select th:field="*{locationType}">
+                                    <option value="digital">Digital</option>
+                                    <option value="physical">Physical</option>
+                                </select>
+                            </label>
+
+                            <label>
+                                <span>Location (URL or address)</span>
+                                <input type="text" th:field="*{locationValue}" placeholder="http://localhost:8181/live-room/...">
+                            </label>
+
+                            <div class="split-fields">
+                                <label>
+                                    <span>Clinician participant id</span>
+                                    <input type="text" th:field="*{clinicianParticipantId}" placeholder="clinician-123">
+                                </label>
+                                <label>
+                                    <span>Patient participant id</span>
+                                    <input type="text" th:field="*{patientParticipantId}" placeholder="patient-456">
+                                </label>
+                            </div>
+
+                            <p class="booking-form-tip">Tip: drag on the week grid to select a time range and open the modal. New appointments are created through your Axon command flow.</p>
+                            <button class="primary-button" type="submit">Create appointment</button>
+                        </form>
+                    </section>
+                </aside>
+
+                <main class="panel calendar-panel">
+                    <div class="calendar-grid-wrap">
+                        <div class="time-axis">
+                            <div class="axis-header"></div>
+                            <div class="axis-hours">
+                                <div class="axis-hour" th:each="hour : ${vm.hours}" th:text="${hour.label}">1 AM</div>
+                            </div>
+                        </div>
+
+                        <div class="week-grid">
+                            <div class="day-headers">
+                                <a class="day-header"
+                                   th:each="day : ${vm.days}"
+                                   th:href="@{/calendar(date=${day.isoDate})}"
+                                   th:attr="hx-get=@{/calendar/week(date=${day.isoDate})}"
+                                   hx-target="#calendar-shell"
+                                   hx-swap="outerHTML"
+                                   th:classappend="${day.today} ? ' is-today' : ''">
+                                    <span class="day-header-label" th:text="${day.weekdayLabel}">MON</span>
+                                    <span class="day-header-number"
+                                          th:text="${day.dayOfMonthLabel}"
+                                          th:classappend="${day.selected} ? ' is-selected' : ''">3</span>
+                                </a>
+                            </div>
+
+                            <div class="day-columns">
+                                <div class="day-column"
+                                     th:each="day : ${vm.days}"
+                                     th:attr="data-iso-date=${day.isoDate}"
+                                     th:classappend="${day.today} ? ' is-today' : ''">
+                                    <div class="hour-lines">
+                                        <div class="hour-line" th:each="hour : ${vm.hours}"></div>
+                                    </div>
+
+                                    <div class="events-layer">
+                                        <div class="selection-preview" hidden></div>
+                                        <div class="event-card"
+                                             th:each="event : ${day.events}"
+                                             th:style="${event.style}"
+                                             th:attr="data-booking-id=${event.id},
+                                                      data-booking-start=${event.startAtInputValue},
+                                                      data-booking-end=${event.endAtInputValue}"
+                                             th:classappend="' color-' + ${event.colorToken}">
+                                            <p class="event-title" th:text="${event.title}">Patient consult</p>
+                                            <p class="event-time" th:text="${event.timeLabel}">10:00 AM - 11:00 AM</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            <div class="calendar-modal-backdrop" hidden data-drag-booking-modal>
+                <div class="calendar-modal" role="dialog" aria-modal="true" aria-labelledby="drag-booking-heading">
+                    <div class="calendar-modal-header">
+                        <div>
+                            <p class="calendar-modal-eyebrow" data-drag-mode-eyebrow>Quick booking</p>
+                            <h2 id="drag-booking-heading" data-drag-mode-title>Create booking from selected slot</h2>
+                            <p class="calendar-modal-summary" data-drag-summary>Select a time range on the calendar to start.</p>
+                        </div>
+                        <button type="button" class="modal-close-button" aria-label="Close modal" data-drag-booking-close>×</button>
+                    </div>
+
+                    <form class="calendar-modal-form"
+                          th:action="@{/calendar/bookings}"
+                          method="post"
+                          hx-post="/calendar/bookings"
+                          hx-target="#calendar-shell"
+                          hx-swap="outerHTML"
+                          data-drag-booking-form>
+                        <input type="hidden" name="bookingId" data-drag-booking-id>
+                        <input type="hidden" name="anchorDate" data-drag-anchor-date>
+
+                        <div class="split-fields">
+                            <label>
+                                <span>Start</span>
+                                <input type="datetime-local" name="startAt" data-drag-start-input step="900" required>
+                            </label>
+                            <label>
+                                <span>End</span>
+                                <input type="datetime-local" name="endAt" data-drag-end-input step="900" required>
+                            </label>
+                        </div>
+
+                        <div data-drag-create-only>
+                            <label>
+                                <span>Location type</span>
+                                <select name="locationType" data-drag-location-type>
+                                    <option value="digital">Digital</option>
+                                    <option value="physical">Physical</option>
+                                </select>
+                            </label>
+
+                            <label>
+                                <span data-drag-location-value-label>Location URL</span>
+                                <input type="text" name="locationValue" data-drag-location-value placeholder="http://localhost:8181/live-room/...">
+                            </label>
+
+                            <div class="split-fields">
+                                <label>
+                                    <span>Clinician participant id</span>
+                                    <input type="text" name="clinicianParticipantId" data-drag-clinician-id placeholder="clinician-123">
+                                </label>
+                                <label>
+                                    <span>Patient participant id</span>
+                                    <input type="text" name="patientParticipantId" data-drag-patient-id placeholder="patient-456">
+                                </label>
+                            </div>
+                        </div>
+
+                        <p class="calendar-modal-note" hidden data-drag-edit-note>
+                            Editing an existing event reschedules the appointment time using the existing appointment id. Location and participants are kept unchanged.
+                        </p>
+
+                        <div class="calendar-modal-actions">
+                            <button type="button" class="ghost-button" data-drag-booking-close>Cancel</button>
+                            <button type="submit" class="primary-button" data-drag-submit-label>Save booking</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
